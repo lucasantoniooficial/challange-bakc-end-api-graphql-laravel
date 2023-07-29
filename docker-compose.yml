@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+    app:
+        build:
+            args:
+                user: 1000
+                uid: 1000
+            context: .docker/php
+            dockerfile: DockerFile
+        working_dir: /var/www
+        restart: unless-stopped
+        volumes:
+            - ./:/var/www
+        networks:
+            - post_network
+            - blog_network
+
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+            - ./.docker/nginx/conf.d/:/etc/nginx/conf.d/
+        networks:
+            - post_network
+        depends_on:
+            - app
+
+    postgres:
+        image: postgres
+        restart: always
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql
+        environment:
+            POSTGRES_PASSWORD: "root"
+            POSTGRES_USER: "root"
+            POSTGRES_DB: "challange"
+        networks:
+            - post_network
+
+
+volumes:
+    postgres_data:
+        driver: local
+
+networks:
+    post_network:
+        driver: bridge
+    blog_network:
+        driver: bridge
+        external: true
